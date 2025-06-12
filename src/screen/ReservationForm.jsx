@@ -14,83 +14,86 @@ const ReservationForm = () => {
   const [error, setError] = useState('');
   const [availableDates, setAvailableDates] = useState([]);
   const [datesLoading, setDatesLoading] = useState(true);
-  const [hoveredDate, setHoveredDate] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
-  // Récupère les dates avec au moins un slot standard actif ET gère les dates exceptionnelles (ouvertures/fermetures)
+  // Récupération des dates disponibles
   useEffect(() => {
     const fetchAvailableDates = async () => {
       setDatesLoading(true);
-      const today = new Date();
-      const dates = [];
-      // 1. Récupérer les créneaux standards actifs
-      let openingSlots = [];
       try {
-        openingSlots = await availabilityService.getAllOpeningSlots();
-      } catch (e) { /* ignore */ }
-      const activeDays = new Set(
-        openingSlots.filter(s => s.is_active).map(s => s.day_of_week)
-      );
-      // 2. Récupérer les dates exceptionnelles (ouvertures/fermetures)
-      let exceptionalDates = [];
-      try {
-        exceptionalDates = await availabilityService.getExceptionalDates(); // à créer si besoin
-      } catch (e) { /* ignore */ }
-      const exceptionalMap = {};
-      exceptionalDates.forEach(ed => {
-        exceptionalMap[ed.date] = ed;
-      });
-      // 3. Générer les 30 prochains jours qui correspondent à un jour actif, en tenant compte des exceptions
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        const dayOfWeek = d.getDay();
-        const dateStr = d.toISOString().slice(0, 10);
-        // Si date exceptionnelle fermée, on saute
-        if (exceptionalMap[dateStr]?.is_closed) continue;
-        // Si date exceptionnelle ouverte avec slots, on ajoute
-        if (exceptionalMap[dateStr] && exceptionalMap[dateStr].slots && exceptionalMap[dateStr].slots.length > 0) {
-          dates.push(dateStr);
-          continue;
-        }
-        // Sinon, jour standard
-        if (activeDays.has(dayOfWeek)) {
-          dates.push(dateStr);
-        }
+        console.log('Récupération des dates disponibles...');
+        const data = await availabilityService.getAvailableDates();
+        console.log('Réponse dates:', data);
+        
+        const dates = data.available_dates?.map(item => item.date) || [];
+        setAvailableDates(dates);
+        console.log('Dates disponibles:', dates);
+        
+      } catch (err) {
+        console.error('Erreur lors du chargement des dates:', err);
+        setAvailableDates([]);
+        setError('Erreur lors du chargement des dates disponibles');
+      } finally {
+        setDatesLoading(false);
       }
-      setAvailableDates(dates);
-      setDatesLoading(false);
     };
+    
     fetchAvailableDates();
   }, []);
 
-  // Récupère les créneaux disponibles pour la date choisie
+  // Récupération des créneaux pour une date
   const fetchSlots = async (selectedDate) => {
-    setSlots([]);
-    setTime('');
-    if (!selectedDate) return;
+    if (!selectedDate) {
+      setSlots([]);
+      setTime('');
+      return;
+    }
+
+    console.log('Récupération des créneaux pour:', selectedDate);
+    
     try {
       const data = await availabilityService.getAvailabilityByDate(selectedDate);
-      // Gestion flexible du format de réponse
-      let slotsArr = [];
-      if (Array.isArray(data)) {
-        slotsArr = data;
-      } else if (Array.isArray(data.slots)) {
-        slotsArr = data.slots;
-      } else if (Array.isArray(data.availableSlots)) {
-        slotsArr = data.availableSlots;
+      console.log('Réponse créneaux:', data);
+      
+      if (data.is_closed) {
+        setSlots([]);
+        setError(data.message || 'Restaurant fermé ce jour-là');
+        return;
       }
-      setSlots(slotsArr);
+
+      const availableSlots = data.slots || [];
+      setSlots(availableSlots);
+      setError('');
+      
+      if (availableSlots.length === 0) {
+        setError(`Aucun créneau disponible pour cette date`);
+      }
+      
     } catch (err) {
+      console.error('Erreur lors du chargement des créneaux:', err);
       setSlots([]);
+      setError('Erreur lors du chargement des créneaux: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const handleDateChange = (e) => {
-    setDate(e.target.value);
-    fetchSlots(e.target.value);
+  const handleDateSelect = (selectedDate) => {
+    console.log('Date sélectionnée:', selectedDate);
+    
+    setDate(selectedDate);
+    setTime('');
+    setError('');
+    setShowCalendar(false);
+    
+    // Vérifier si la date est valide
+    if (!availableDates.includes(selectedDate)) {
+      setSlots([]);
+      setError('Cette date n\'est pas disponible à la réservation');
+      return;
+    }
+    
+    fetchSlots(selectedDate);
   };
 
-  // handleTimeChange redevient simple :
   const handleTimeChange = (e) => {
     setTime(e.target.value);
   };
@@ -100,6 +103,20 @@ const ReservationForm = () => {
     setLoading(true);
     setSuccess('');
     setError('');
+
+    // Validation côté client
+    if (!availableDates.includes(date)) {
+      setError('Date non valide');
+      setLoading(false);
+      return;
+    }
+
+    if (!slots.includes(time)) {
+      setError('Créneau non disponible');
+      setLoading(false);
+      return;
+    }
+
     try {
       await availabilityService.createReservation({
         number_of_people: numberOfPeople,
@@ -107,98 +124,231 @@ const ReservationForm = () => {
         time,
         note,
       });
-      setSuccess('Réservation enregistrée !');
+      
+      setSuccess('Réservation enregistrée avec succès !');
+      
+      // Reset du formulaire
       setDate('');
       setTime('');
       setNumberOfPeople(2);
       setNote('');
       setSlots([]);
+      
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de la réservation");
+      const errorMessage = err.response?.data?.message || "Erreur lors de la réservation";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // Fonction pour formater les dates
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short'
+    };
+    return date.toLocaleDateString('fr-FR', options);
+  };
+
+  // Fonction pour grouper les dates par semaine
+  const groupDatesByWeek = () => {
+    const weeks = [];
+    let currentWeek = [];
+    
+    availableDates.forEach((dateStr, index) => {
+      currentWeek.push(dateStr);
+      
+      // Nouvelle semaine tous les 7 jours ou à la fin
+      if (currentWeek.length === 7 || index === availableDates.length - 1) {
+        weeks.push([...currentWeek]);
+        currentWeek = [];
+      }
+    });
+    
+    return weeks;
+  };
+
   return (
-    <div className="reservation-form-container">
-      <h2>Réserver une table</h2>
-      <form onSubmit={handleSubmit} className="reservation-form">
-        <label>Date</label>
-        <input
-          type="date"
-          value={date}
-          onChange={handleDateChange}
-          required
-          min={availableDates[0]}
-          max={availableDates[availableDates.length - 1]}
-          list="available-dates"
-          disabled={datesLoading}
-          style={{
-            backgroundColor: date && !availableDates.includes(date) ? '#ffd6d6' : undefined
-          }}
-          onMouseOver={e => setHoveredDate(e.target.value)}
-          onMouseOut={() => setHoveredDate('')}
-        />
-        <datalist id="available-dates">
-          {availableDates.map(d => (
-            <option key={d} value={d} />
-          ))}
-        </datalist>
-        {date && !availableDates.includes(date) && (
-          <div className="error-message">Cette date n'est pas disponible à la réservation.</div>
-        )}
-        <div style={{marginBottom: 8}}>
-          <span style={{color: '#2e7d32'}}>Dates disponibles : </span>
-          {availableDates.map(d => (
-            <span
-              key={d}
-              style={{
-                marginRight: 6,
-                fontWeight: d === date ? 'bold' : 'normal',
-                textDecoration: d === hoveredDate ? 'underline' : 'none',
-                color: d === date ? '#1976d2' : '#333',
-                cursor: 'pointer'
-              }}
-              onClick={() => { setDate(d); fetchSlots(d); }}
-              onMouseOver={() => setHoveredDate(d)}
-              onMouseOut={() => setHoveredDate('')}
-            >
-              {d}
-            </span>
-          ))}
+    <div className="container">
+      <div className="card">
+        <div className="page-header">
+          <h1 className="title-page">Réserver une table</h1>
+          <p className="page-description">
+            Choisissez votre date, votre créneau et le nombre de personnes
+          </p>
         </div>
-        <Inputs
-          label="Nombre de personnes"
-          type="number"
-          min={1}
-          max={20}
-          value={numberOfPeople}
-          onChange={e => setNumberOfPeople(Number(e.target.value))}
-          required
-        />
-        <label>Créneau horaire</label>
-        <select value={time} onChange={handleTimeChange} required disabled={slots.length === 0}>
-          <option value="">-- Choisir un créneau --</option>
-          {slots.map(slot => (
-            <option key={slot} value={slot}>{slot}</option>
-          ))}
-        </select>
-        {date && slots.length === 0 && (
-          <div className="error-message">Aucun créneau disponible pour cette date.</div>
+
+        {datesLoading && (
+          <div className="loading">Chargement des disponibilités...</div>
         )}
-        <Inputs
-          label="Note (optionnelle)"
-          type="text"
-          value={note}
-          onChange={e => setNote(e.target.value)}
-        />
-        <PrimaryButton type="submit" disabled={loading}>
-          {loading ? 'Réservation...' : 'Réserver'}
-        </PrimaryButton>
-        {success && <div className="success-message">{success}</div>}
-        {error && <div className="error-message">{error}</div>}
-      </form>
+
+        <form onSubmit={handleSubmit} className="reservation-form">
+          {/* Sélection de date */}
+          <div className="form-group">
+            <label className="form-label">Date souhaitée</label>
+            
+            {!datesLoading && availableDates.length > 0 && (
+              <div className="date-selection">
+                <div className="selected-date-display">
+                  <input
+                    type="text"
+                    value={date ? formatDate(date) : ''}
+                    placeholder="Cliquez pour choisir une date"
+                    className="form-input date-input"
+                    onClick={() => setShowCalendar(!showCalendar)}
+                    readOnly
+                  />
+                  <button 
+                    type="button"
+                    className="calendar-toggle"
+                    onClick={() => setShowCalendar(!showCalendar)}
+                  >
+                    Calendrier
+                  </button>
+                </div>
+
+                {showCalendar && (
+                  <div className="calendar-container">
+                    <div className="calendar-header">
+                      <h4>Dates disponibles</h4>
+                      <span className="available-count">
+                        {availableDates.length} dates disponibles
+                      </span>
+                    </div>
+                    
+                    <div className="calendar-grid">
+                      {groupDatesByWeek().map((week, weekIndex) => (
+                        <div key={weekIndex} className="calendar-week">
+                          {week.map(dateStr => (
+                            <button
+                              key={dateStr}
+                              type="button"
+                              className={`calendar-date ${date === dateStr ? 'selected' : ''}`}
+                              onClick={() => handleDateSelect(dateStr)}
+                            >
+                              <span className="date-day">
+                                {new Date(dateStr).getDate()}
+                              </span>
+                              <span className="date-month">
+                                {formatDate(dateStr).split(' ')[1]}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!datesLoading && availableDates.length === 0 && (
+              <div className="message message-error">
+                Aucune date disponible pour le moment
+              </div>
+            )}
+          </div>
+
+          {/* Nombre de personnes */}
+          <div className="form-group">
+            <label className="form-label">Nombre de personnes</label>
+            <select
+              value={numberOfPeople}
+              onChange={e => setNumberOfPeople(Number(e.target.value))}
+              className="form-select"
+              required
+            >
+              {[...Array(20)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {i + 1} personne{i > 0 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Créneau horaire */}
+          <div className="form-group">
+            <label className="form-label">Créneau horaire</label>
+            
+            {date && slots.length > 0 && (
+              <div className="time-slots">
+                {slots.map(slot => (
+                  <button
+                    key={slot}
+                    type="button"
+                    className={`time-slot ${time === slot ? 'selected' : ''}`}
+                    onClick={() => setTime(slot)}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {date && slots.length === 0 && !error && (
+              <div className="message message-info">
+                Chargement des créneaux...
+              </div>
+            )}
+
+            {!date && (
+              <div className="form-help">
+                Sélectionnez d'abord une date pour voir les créneaux disponibles
+              </div>
+            )}
+          </div>
+
+          {/* Note optionnelle */}
+          <div className="form-group">
+            <label className="form-label">Note (optionnelle)</label>
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Allergies, occasion spéciale, demandes particulières..."
+              className="form-textarea"
+              rows="3"
+            />
+          </div>
+
+          {/* Messages d'erreur/succès */}
+          {success && (
+            <div className="message message-success">
+              {success}
+            </div>
+          )}
+          
+          {error && (
+            <div className="message message-error">
+              {error}
+            </div>
+          )}
+
+          {/* Bouton de soumission */}
+          <div className="form-actions">
+            <button 
+              type="submit" 
+              disabled={loading || !date || !time || slots.length === 0}
+              className="btn btn-primary btn-full btn-large"
+            >
+              {loading ? 'Réservation en cours...' : 'Confirmer la réservation'}
+            </button>
+          </div>
+        </form>
+
+        {/* Informations pratiques */}
+        <div className="reservation-info">
+          <h3>Informations pratiques</h3>
+          <ul>
+            <li>Les réservations sont confirmées sous 24h</li>
+            <li>Annulation gratuite jusqu'à 2h avant l'heure de réservation</li>
+            <li>Un retard de plus de 15 minutes peut entraîner l'annulation</li>
+            <li>Pour les groupes de plus de 10 personnes, contactez-nous directement</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };

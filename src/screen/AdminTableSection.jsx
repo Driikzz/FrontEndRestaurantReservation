@@ -15,7 +15,7 @@ const AdminTableSection = () => {
     setError('');
     try {
       const data = await tableService.getTables();
-      setTables(data.tables || data); // selon la structure de la réponse
+      setTables(data.tables || data);
     } catch (err) {
       setError("Erreur lors du chargement des tables.");
     }
@@ -42,31 +42,78 @@ const AdminTableSection = () => {
     fetchTables();
   };
 
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditTable(null);
+  };
+
   return (
-    <section style={{ margin: '48px 0', background: '#f8fafc', borderRadius: 12, padding: 32 }}>
-      <h2 style={{ color: '#007bff', fontSize: 24, marginBottom: 24 }}>Gestion des tables</h2>
-      <div style={{ textAlign: 'right', marginBottom: 24 }}>
-        <PrimaryButton onClick={handleCreate}>Créer une table</PrimaryButton>
+    <div>
+      <div className="section-header">
+        <h2>Gestion des Tables</h2>
+        <button onClick={handleCreate} className="btn btn-primary">
+          Nouvelle table
+        </button>
       </div>
+
       {loading ? (
-        <div style={{ color: '#888', textAlign: 'center' }}>Chargement...</div>
+        <div className="loading">Chargement des tables...</div>
       ) : error ? (
-        <div style={{ color: 'red', textAlign: 'center' }}>{error}</div>
+        <div className="message message-error">{error}</div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, maxWidth: 600, margin: '0 auto' }}>
-          {tables.length > 0 ? tables.map((table) => (
-            <li key={table.id} style={{ borderBottom: '1px solid #eee', padding: '12px 0', cursor: 'pointer' }} onClick={() => handleEdit(table)}>
-              <b>{table.name}</b> — {table.seats} places — {table.location}
-            </li>
-          )) : <li style={{ color: '#888', textAlign: 'center' }}>Aucune table enregistrée.</li>}
-        </ul>
-      )}
-      {showForm && (
-        <div style={{ marginTop: 32 }}>
-          <AdminTableForm table={editTable} onSuccess={handleSuccess} />
+        <div className="table-container">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Capacité</th>
+                <th>Emplacement</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tables.length > 0 ? tables.map((table) => (
+                <tr key={table.id}>
+                  <td className="table-name">{table.name}</td>
+                  <td>{table.seats} personnes</td>
+                  <td>{table.location}</td>
+                  <td>
+                    <button 
+                      onClick={() => handleEdit(table)}
+                      className="btn btn-secondary btn-small"
+                    >
+                      Modifier
+                    </button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="4" className="text-center">
+                    Aucune table enregistrée
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
-    </section>
+
+      {showForm && (
+        <div className="form-overlay">
+          <div className="form-modal">
+            <div className="modal-header">
+              <h3>{editTable ? 'Modifier la table' : 'Nouvelle table'}</h3>
+              <button onClick={handleCancel} className="btn-close">×</button>
+            </div>
+            <AdminTableForm 
+              table={editTable} 
+              onSuccess={handleSuccess}
+              onCancel={handleCancel}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

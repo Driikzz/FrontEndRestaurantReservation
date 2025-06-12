@@ -1,28 +1,35 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const NavBar = ({ onLogout, isAuthenticated, userRole }) => {
-  // Récupération du rôle depuis le localStorage (à adapter selon ta logique réelle)
-  const prenom = 'Rémi';
-  const role = localStorage.getItem('role') || 'client';
+const NavBar = ({ onLogout }) => {
+  const userRole = localStorage.getItem('role');
+  const userFirstname = localStorage.getItem('firstname');
 
   return (
     <nav className="navbar">
-      <div className="navbar__left">
-        <span className="navbar__prenom">Bienvenue, {prenom} !</span>
-        <Link to="/home" className="navbar__link">Accueil</Link>
-        {(userRole === 'client' || role === 'admin') && (
+      <Link to="/home" className="navbar-brand">
+        🍽️ Le Gourmet
+      </Link>
+      
+      <div className="navbar-links">
+        <Link to="/home">Accueil</Link>
+        <Link to="/reserver">Réserver</Link>
+        <Link to="/mes-reservations">Mes Réservations</Link>
+        {userRole === 'admin' && (
           <>
-            <li><a href="/reserver">Réserver</a></li>
-            <li><a href="/mes-reservations">Mes réservations</a></li>
+            <Link to="/admin">Admin</Link>
+            <Link to="/reservations">Réservations</Link>
           </>
         )}
-        {role === 'admin' && (
-          <Link to="/admin" className="navbar__admin">Espace admin</Link>
-        )}
       </div>
-      <div className="navbar__right">
-        <button onClick={onLogout} className="navbar__logout">Déconnexion</button>
+      
+      <div className="navbar-right">
+        {userFirstname && (
+          <span className="navbar-user">Bonjour {userFirstname}</span>
+        )}
+        <button onClick={onLogout} className="btn-logout">
+          Déconnexion
+        </button>
       </div>
     </nav>
   );

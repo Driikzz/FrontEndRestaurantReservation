@@ -1,10 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import LoginScreen from './screen/LoginScreen';
 import Register from './screen/Register';
 import HomePage from './screen/HomePage';
 import NavBar from './components/NavBar';
 import AdminDashboard from './screen/AdminDashboard';
+import AdminReservations from './screen/AdminReservations';
 import ReservationForm from './screen/ReservationForm';
 import MyReservations from './screen/MyReservations';
 import './App.css';
@@ -31,7 +32,7 @@ function App() {
     <Router>
       {isAuthenticated && <NavBar onLogout={handleLogout} />}
       {!isAuthenticated && (
-        <nav style={{ display: 'flex', justifyContent: 'center', gap: 16, margin: 24 }}>
+        <nav className="nav-public">
           <Link to="/login">Connexion</Link>
           <Link to="/register">Inscription</Link>
         </nav>
@@ -42,9 +43,9 @@ function App() {
         <Route path="/register" element={isAuthenticated ? <Navigate to="/home" /> : <Register />} />
         <Route path="/home" element={isAuthenticated ? <HomePage /> : <Navigate to="/login" />} />
         <Route path="/admin" element={isAuthenticated && isAdmin ? <AdminDashboard /> : <Navigate to="/home" />} />
+        <Route path="/reservations" element={isAuthenticated && isAdmin ? <AdminReservations /> : <Navigate to="/home" />} />
         <Route path="/reserver" element={isAuthenticated ? <ReservationForm /> : <Navigate to="/login" />} />
         <Route path="/mes-reservations" element={isAuthenticated ? <MyReservations /> : <Navigate to="/login" />} />
-        {/* Ajoute d'autres routes protégées ici si besoin */}
       </Routes>
     </Router>
   );

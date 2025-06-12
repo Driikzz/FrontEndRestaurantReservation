@@ -154,6 +154,73 @@ const availabilityService = {
       throw error;
     }
   },
+  // --- RÉSERVATIONS ADMIN ---
+  async getAllReservations(filters = {}) {
+    const token = localStorage.getItem('token');
+    try {
+      const params = new URLSearchParams();
+      if (filters.date) params.append('date', filters.date);
+      if (filters.status) params.append('status', filters.status);
+      
+      const response = await axios.get(`${BASE_URL}/api/reservations?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des réservations admin :', error);
+      throw error;
+    }
+  },
+  async validateReservation(id) {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.patch(`${BASE_URL}/api/reservations/${id}/validate`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la validation de la réservation :', error);
+      throw error;
+    }
+  },
+  async cancelReservationAdmin(id) {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.delete(`${BASE_URL}/api/reservations/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'annulation admin de la réservation :', error);
+      throw error;
+    }
+  },
+  // Nouvelle fonction : obtenir les dates disponibles
+  async getAvailableDates() {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/availability/dates`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des dates disponibles :', error);
+      throw error;
+    }
+  },
+  // Fonction améliorée pour obtenir les dates disponibles avec plus de détails
+  async getAvailableDatesDetailed() {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/availability/dates`);
+      return response.data.available_dates || [];
+    } catch (error) {
+      console.error('Erreur lors de la récupération des dates disponibles détaillées :', error);
+      return [];
+    }
+  },
 };
 
 export default availabilityService;
