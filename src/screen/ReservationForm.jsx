@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import availabilityService from '../service/availabilityService';
-import PrimaryButton from '../components/PrimaryButton';
-import Inputs from '../components/Inputs';
 
 const ReservationForm = () => {
   const [date, setDate] = useState('');
@@ -16,7 +14,6 @@ const ReservationForm = () => {
   const [datesLoading, setDatesLoading] = useState(true);
   const [showCalendar, setShowCalendar] = useState(false);
 
-  // Récupération des dates disponibles
   useEffect(() => {
     const fetchAvailableDates = async () => {
       setDatesLoading(true);
@@ -41,7 +38,6 @@ const ReservationForm = () => {
     fetchAvailableDates();
   }, []);
 
-  // Récupération des créneaux pour une date
   const fetchSlots = async (selectedDate) => {
     if (!selectedDate) {
       setSlots([]);
@@ -94,17 +90,12 @@ const ReservationForm = () => {
     fetchSlots(selectedDate);
   };
 
-  const handleTimeChange = (e) => {
-    setTime(e.target.value);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSuccess('');
     setError('');
 
-    // Validation côté client
     if (!availableDates.includes(date)) {
       setError('Date non valide');
       setLoading(false);
@@ -127,7 +118,6 @@ const ReservationForm = () => {
       
       setSuccess('Réservation enregistrée avec succès !');
       
-      // Reset du formulaire
       setDate('');
       setTime('');
       setNumberOfPeople(2);
@@ -143,25 +133,28 @@ const ReservationForm = () => {
   };
 
   // Fonction pour formater les dates
-  const formatDate = (dateString) => {
+  const formatDate = (dateString, long = false) => {
     const date = new Date(dateString);
-    const options = { 
-      weekday: 'short', 
-      day: 'numeric', 
-      month: 'short'
-    };
+    const options = long
+      ? { weekday: 'long', day: 'numeric', month: 'long' }
+      : { weekday: 'short', day: 'numeric', month: 'short' };
     return date.toLocaleDateString('fr-FR', options);
   };
 
-  // Fonction pour grouper les dates par semaine
+  // Fonction pour formater un créneau horaire (ex: 10:22:00 => 10h22)
+  const formatSlot = (slot) => {
+    if (!slot) return '';
+    const [h, m] = slot.split(':');
+    return `${h}h${m}`;
+  };
+
   const groupDatesByWeek = () => {
     const weeks = [];
     let currentWeek = [];
     
     availableDates.forEach((dateStr, index) => {
       currentWeek.push(dateStr);
-      
-      // Nouvelle semaine tous les 7 jours ou à la fin
+
       if (currentWeek.length === 7 || index === availableDates.length - 1) {
         weeks.push([...currentWeek]);
         currentWeek = [];
@@ -230,10 +223,7 @@ const ReservationForm = () => {
                               onClick={() => handleDateSelect(dateStr)}
                             >
                               <span className="date-day">
-                                {new Date(dateStr).getDate()}
-                              </span>
-                              <span className="date-month">
-                                {formatDate(dateStr).split(' ')[1]}
+                                {formatDate(dateStr, true)}
                               </span>
                             </button>
                           ))}
@@ -261,7 +251,7 @@ const ReservationForm = () => {
               className="form-select"
               required
             >
-              {[...Array(20)].map((_, i) => (
+              {[...Array(6)].map((_, i) => (
                 <option key={i + 1} value={i + 1}>
                   {i + 1} personne{i > 0 ? 's' : ''}
                 </option>
@@ -282,7 +272,7 @@ const ReservationForm = () => {
                     className={`time-slot ${time === slot ? 'selected' : ''}`}
                     onClick={() => setTime(slot)}
                   >
-                    {slot}
+                    {formatSlot(slot)}
                   </button>
                 ))}
               </div>

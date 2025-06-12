@@ -5,32 +5,47 @@
 Ce projet est une application web complète de réservation pour restaurant, développée avec React (Vite) pour le frontend et Node.js/Express/Sequelize pour le backend. Elle permet :
 - Authentification/inscription (client & admin)
 - Gestion des rôles (admin/client)
-- Affichage dynamique du menu
+- Affichage dynamique du menu (composant réutilisable)
 - Réservation de tables sur créneaux standards et dates exceptionnelles
+- Sélection UX des dates et créneaux : calendrier interactif, affichage lisible des horaires et jours
 - Espace admin : gestion des tables, créneaux, dates exceptionnelles, dashboard
-- UX moderne et responsive
+- Attribution automatique des tables lors de la réservation
+- Consultation/annulation de ses réservations côté client
+- Design moderne, responsive, messages d’erreur/succès, feedback utilisateur
 
-## Fonctionnalités principales
+## Fonctionnalités réalisées
 
 ### Côté client
-- Inscription, connexion, déconnexion
-- Réservation sur les créneaux réellement disponibles (prise en compte des jours standards et dates exceptionnelles)
-- Affichage des créneaux et dates disponibles dans le formulaire
-- Consultation et annulation de ses réservations
+- [x] Inscription, connexion, déconnexion
+- [x] Sélection de la date sur calendrier interactif (affichage explicite : lundi 16 juin...)
+- [x] Sélection des créneaux horaires (affichage lisible : 10h22)
+- [x] Réservation uniquement sur les créneaux réellement disponibles (prise en compte jours standards ET dates exceptionnelles)
+- [x] Consultation et annulation de ses réservations
+- [x] Affichage dynamique du menu via composant `MenuSection`
+- [x] Feedback UX (chargement, erreurs, succès, validation des champs)
 
 ### Côté admin
-- Dashboard d’administration
-- Gestion CRUD des tables
-- Gestion CRUD des créneaux standards (par jour de la semaine)
-- Gestion CRUD des dates exceptionnelles (ouvertures/fermetures spéciales)
-- Attribution automatique des tables lors de la réservation
+- [x] Dashboard d’administration
+- [x] Gestion CRUD des tables
+- [x] Gestion CRUD des créneaux standards (par jour de la semaine)
+- [x] Gestion CRUD des dates exceptionnelles (ouvertures/fermetures spéciales)
+- [x] Attribution automatique des tables lors de la réservation
+- [x] Navigation adaptée selon le rôle (boutons admin/réserver/mes réservations)
+
+### Technique & UX
+- [x] Routing React Router DOM avec redirections selon l’authentification et le rôle
+- [x] Stockage du token, rôle et prénom dans localStorage
+- [x] Services API centralisés (userService, availabilityService, menuService, tableService)
+- [x] Composants réutilisables (Inputs, PrimaryButton, MenuSection, NavBar...)
+- [x] Design responsive, moderne, messages d’erreur/succès, feedback utilisateur
+- [x] Code commenté et structuré (explications physiques pour la simulation, etc.)
 
 ## Structure du projet
 
 ```
 resto-tp/
   src/
-    components/         # Composants réutilisables (NavBar, Inputs, PrimaryButton...)
+    components/         # Composants réutilisables (NavBar, Inputs, PrimaryButton, MenuSection...)
     misc/               # Fichiers utilitaires (base_url...)
     screen/             # Pages principales (HomePage, ReservationForm, AdminDashboard...)
     service/            # Services d’appel API (userService, availabilityService...)
@@ -68,7 +83,7 @@ resto-tp/
 
 ## Auteur
 - Rémi S. – ESGI B3
+- Lorenzo F. - ESGI B3
+- Nohlan H. - ESGI B3
 
 ---
-
-Pour toute question ou amélioration, n’hésitez pas à ouvrir une issue ou à me contacter.

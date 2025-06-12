@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 
 const NavBar = ({ onLogout }) => {
   const userRole = localStorage.getItem('role');
-  const userFirstname = localStorage.getItem('firstname');
 
   return (
     <nav className="navbar">
       <Link to="/home" className="navbar-brand">
-        🍽️ Le Gourmet
+        Les gourmands
       </Link>
       
       <div className="navbar-links">
@@ -24,9 +23,6 @@ const NavBar = ({ onLogout }) => {
       </div>
       
       <div className="navbar-right">
-        {userFirstname && (
-          <span className="navbar-user">Bonjour {userFirstname}</span>
-        )}
         <button onClick={onLogout} className="btn-logout">
           Déconnexion
         </button>

@@ -1,21 +1,21 @@
-import React from 'react';
-
-const Inputs = ({ 
-  label, 
-  type = 'text', 
-  value, 
-  onChange, 
-  placeholder = '', 
+const Inputs = ({
+  label,
+  type = "text",
+  value,
+  onChange,
+  placeholder = "",
   required = false,
   disabled = false,
   error = false,
-  className = '',
-  ...props 
+  className = "",
+  ...props
 }) => {
   return (
     <div className="form-group">
       {label && (
-        <label className={`form-label ${required ? 'form-label--required' : ''}`}>
+        <label
+          className={`form-label ${required ? "form-label--required" : ""}`}
+        >
           {label}
         </label>
       )}
@@ -26,7 +26,9 @@ const Inputs = ({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className={`form-input ${error ? 'form-input--error' : ''} ${className}`}
+        className={`form-input ${
+          error ? "form-input--error" : ""
+        } ${className}`}
         {...props}
       />
     </div>

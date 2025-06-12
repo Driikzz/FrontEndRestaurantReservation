@@ -112,7 +112,7 @@ body {
 /* ========== CONTENEURS ========== */
 
 .container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 40px auto;
   padding: 0 20px;
 }
@@ -321,7 +321,7 @@ body {
 .hero-section {
   text-align: center;
   padding: 60px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8fa0ec 0%, #996cc7 100%);
   color: white;
   margin: -40px -40px 40px -40px;
   border-radius: 12px 12px 0 0;
